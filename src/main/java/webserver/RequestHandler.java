@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -21,6 +22,7 @@ import model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.FileIoUtils;
+import utils.IOUtils;
 
 public class RequestHandler implements Runnable {
 
@@ -41,17 +43,26 @@ public class RequestHandler implements Runnable {
             InputStreamReader reader = new InputStreamReader(in);
             BufferedReader bufferedReader = new BufferedReader(reader);
 
-            String command = parseCommandPath(bufferedReader.readLine());
+            String commandLine = bufferedReader.readLine();
             byte[] body = {};
             String contentType = null;
+            Map<String, String> headerDict = parseHeader(bufferedReader);
 
-            if (isQuery(command)) {
-                ExecuteCommand(command);
+            if (isGetQuery(commandLine)) {
+                ExecuteCommand(extractCommand(commandLine));
             }
-            if (isResource(command)) {
-                String filePath = makeFilePath(command);
+
+            if (isGetResource(commandLine)) {
+                String filePath = makeFilePath(extractCommand(commandLine));
                 body = FileIoUtils.loadFileFromClasspath(filePath);
                 contentType = Files.probeContentType(Path.of(filePath));
+            }
+
+            if (isPost(commandLine)) {
+                int contentLength = Integer.parseInt(headerDict.get("content-length"));
+                String queryString = IOUtils.readData(bufferedReader, contentLength);
+                createUser(queryString);
+                System.out.println(DataBase.findUserById("test"));
             }
 
             DataOutputStream dos = new DataOutputStream(out);
@@ -62,28 +73,51 @@ public class RequestHandler implements Runnable {
         }
     }
 
+    private Map<String, String> parseHeader(BufferedReader bufferedReader) throws IOException{
+        Map<String, String> headerDict = new HashMap<>();
+        String line = bufferedReader.readLine();
+        while (!"".equals(line)) {
+            if (line == null) return headerDict;
+            String [] tokens = line.split(": ");
+            headerDict.put(tokens[0].toLowerCase(), tokens[1]);
+            line = bufferedReader.readLine();
+        }
+        return headerDict;
+    }
+
+    private boolean isPost(String commandLine) {
+        return commandLine.startsWith("POST");
+    }
+
     private void ExecuteCommand(String command) {
         String[] tokens = command.split("\\?");
         String path = tokens[0];
-        Map<String, String> parameters = Arrays.stream(tokens[1].split("&"))
+        if (path.startsWith("/user")) createUser(tokens[1]);
+    }
+
+    private void createUser(String query) {
+        Map<String, String> parameters = parseParameters(query);
+        DataBase.addUser(new User(parameters.get("userId"), parameters.get("password"),
+            parameters.get("name"), parameters.get("email")));
+    }
+
+    private Map<String, String> parseParameters(String parameterString) {
+        return Arrays.stream(parameterString.split("&"))
             .map(url -> URLDecoder.decode(url, StandardCharsets.UTF_8))
             .map(token -> token.split("="))
             .collect(Collectors.toMap(token -> token[0], token -> token[1]));
-
-        if (path.startsWith("/user")) {
-            DataBase.addUser(new User(parameters.get("userId"), parameters.get("password"),
-                parameters.get("name"), parameters.get("email")));
-
-            System.out.println(DataBase.findUserById("test"));
-        }
     }
 
-    private boolean isResource(String command) {
-        return !isQuery(command);
+    private boolean isGetResource(String commandLine) {
+        return isGet(commandLine) && !isGetQuery(commandLine);
     }
 
-    private boolean isQuery(String command) {
-        return QUERY_PATTERN.matcher(command).find();
+    private boolean isGet(String commandLine) {
+        return commandLine.startsWith("GET");
+    }
+
+    private boolean isGetQuery(String commandLine) {
+        return isGet(commandLine) && QUERY_PATTERN.matcher(commandLine).find();
     }
 
     private String makeFilePath(String fileName) {
@@ -97,22 +131,10 @@ public class RequestHandler implements Runnable {
         return !commandPath.endsWith(".html") && !commandPath.endsWith(".ico");
     }
 
-    private String parseCommandPath(String commandLine) {
+    private String extractCommand(String commandLine) {
         String[] tokens = commandLine.split(" ");
         return tokens[1];
     }
-
-//    private Map<String, String> parseHeader(BufferedReader bufferedReader) throws IOException{
-//        Map<String, String> headerDict = new HashMap<>();
-//        String line = bufferedReader.readLine();
-//        while (!"".equals(line)) {
-//            if (line == null) return headerDict;
-//            String [] tokens = line.split(": ");
-//            headerDict.put(tokens[0].toLowerCase(), tokens[1]);
-//            line = bufferedReader.readLine();
-//        }
-//        return headerDict;
-//    }
 
     private void response200Header(DataOutputStream dos, int lengthOfBodyContent, String contentType) {
         try {
