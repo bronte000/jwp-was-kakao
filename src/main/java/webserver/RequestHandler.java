@@ -47,27 +47,28 @@ public class RequestHandler implements Runnable {
             byte[] body = {};
             String contentType = null;
             Map<String, String> headerDict = parseHeader(bufferedReader);
-
-            if (isGetQuery(commandLine)) {
-                ExecuteCommand(extractCommand(commandLine));
-            }
+            DataOutputStream dos = new DataOutputStream(out);
 
             if (isGetResource(commandLine)) {
                 String filePath = makeFilePath(extractCommand(commandLine));
                 body = FileIoUtils.loadFileFromClasspath(filePath);
                 contentType = Files.probeContentType(Path.of(filePath));
+
+                response200Header(dos, body.length, contentType);
+                responseBody(dos, body);
+            }
+
+            if (isGetQuery(commandLine)) {
+                ExecuteCommand(extractCommand(commandLine));
+                response302Header(dos, "/index.html");
             }
 
             if (isPost(commandLine)) {
                 int contentLength = Integer.parseInt(headerDict.get("content-length"));
                 String queryString = IOUtils.readData(bufferedReader, contentLength);
                 createUser(queryString);
-                System.out.println(DataBase.findUserById("test"));
+                response302Header(dos, "/index.html");
             }
-
-            DataOutputStream dos = new DataOutputStream(out);
-            response200Header(dos, body.length, contentType);
-            responseBody(dos, body);
         } catch (IOException | URISyntaxException e) {
             logger.error(e.getMessage());
         }
@@ -141,6 +142,16 @@ public class RequestHandler implements Runnable {
             dos.writeBytes("HTTP/1.1 200 OK \r\n");
             dos.writeBytes("Content-Type:" + contentType + "\r\n");
             dos.writeBytes("Content-Length: " + lengthOfBodyContent + "\r\n");
+            dos.writeBytes("\r\n");
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+        }
+    }
+
+    private void response302Header(DataOutputStream dos, String redirectPath) {
+        try {
+            dos.writeBytes("HTTP/1.1 302 Found \r\n");
+            dos.writeBytes("Location:" + redirectPath + "\r\n");
             dos.writeBytes("\r\n");
         } catch (IOException e) {
             logger.error(e.getMessage());
