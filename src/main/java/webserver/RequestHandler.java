@@ -21,7 +21,7 @@ public class RequestHandler implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
 
-    private Socket connection;
+    private final Socket connection;
 
     public RequestHandler(Socket connectionSocket) {
         this.connection = connectionSocket;
@@ -89,10 +89,10 @@ public class RequestHandler implements Runnable {
     }
 
     private boolean isGet(String method) {
-        return method.equals("GET");
+        return RestMethod.GET.hasSameValue(method);
     }
 
     private boolean isPost(String method) {
-        return method.equals("POST");
+        return RestMethod.POST.hasSameValue(method);
     }
 }
