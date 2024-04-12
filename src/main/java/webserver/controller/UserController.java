@@ -11,7 +11,8 @@ public class UserController implements AbstractController {
 
     @Override
     public void doGet(DataOutputStream dos, String commandLine, Map<String, String> headerDict){
-            executeCommand(commandLine);
+            String command = commandLine.split("/user")[1];
+            executeCommand(command);
             ResponseMaker.response302Header(dos, "/index.html");
     }
 

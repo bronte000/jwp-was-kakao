@@ -15,5 +15,4 @@ public interface AbstractController {
     void doDelete();
 
     void doPut();
-
 }
