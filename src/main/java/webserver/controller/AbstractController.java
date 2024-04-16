@@ -7,12 +7,8 @@ import java.util.Map;
 
 public interface AbstractController {
 
-    void doGet(DataOutputStream dos, String commandLine, Map<String, String> headerDict)
+    String[] doGet(String commandLine, Map<String, String> headerDict)
         throws IOException, URISyntaxException;
 
-    void doPost(DataOutputStream dos, Map<String, String> body);
-
-    void doDelete();
-
-    void doPut();
+    String[] doPost(Map<String, String> body) throws IOException;
 }

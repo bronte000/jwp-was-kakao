@@ -15,9 +15,7 @@ import webserver.view.ViewResolver;
 public class ResourceController implements AbstractController {
 
     @Override
-    public void doGet(DataOutputStream dos,
-                        String path,
-                        Map<String, String> headerDict) throws IOException, URISyntaxException {
+    public String[] doGet(String path, Map<String, String> headerDict) throws IOException, URISyntaxException {
 
         ViewResolver viewResolver = new StaticViewResolver();
         if (isTemplatePath(path)) {
@@ -28,26 +26,17 @@ public class ResourceController implements AbstractController {
         byte [] body = FileIoUtils.loadFileFromClasspath(filePath);
         String contentType = Files.probeContentType(Path.of(filePath));
 
-        ResponseMaker.response200Header(dos, body.length, contentType);
-        ResponseMaker.responseBody(dos, body);
+        String responseHeader = ResponseMaker.response200Header(body.length, contentType);
+        String responseBody = ResponseMaker.responseBody(body);
+        return new String[]{responseHeader, responseBody};
     }
 
     @Override
-    public void doPost(DataOutputStream dos, Map<String, String> body) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void doDelete() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void doPut() {
+    public String[] doPost(Map<String, String> body) {
         throw new UnsupportedOperationException();
     }
 
     private boolean isTemplatePath(String path) {
-        return path.endsWith(".html") || path.endsWith(".ico");
+        return path.equals("/") || path.endsWith(".html") || path.endsWith(".ico");
     }
 }

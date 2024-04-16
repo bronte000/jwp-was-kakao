@@ -19,7 +19,9 @@ import webserver.controller.UserController;
 
 public class RequestHandler implements Runnable {
 
+    public static final int RESPONSE_HEADER_IDX = 0;
     private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
+    public static final int RESPONSE_BODY_IDX = 1;
 
     private final Socket connection;
 
@@ -45,32 +47,36 @@ public class RequestHandler implements Runnable {
     private void handleRequest(DataOutputStream dos, BufferedReader bufferedReader)
         throws IOException, URISyntaxException {
 
-        String[] tokens = bufferedReader.readLine().split(" ");
-        String method = tokens[0];
-        String commandLine = tokens[1];
+        String commandLine = bufferedReader.readLine();
+        RestMethod method = RestMethod.valueOf(RequestParser.parseMethod(commandLine).toUpperCase());
+        String commandPath = RequestParser.parseCommandPath(commandLine);
         Map<String, String> headerDict = RequestParser.parseHeader(bufferedReader);
 
-        AbstractController controller = getController(commandLine);
+        AbstractController controller = getController(commandPath);
+        String[] responses = {};
 
-        if (isGet(method)) {
-            handleGetRequest(dos, controller, commandLine, headerDict);
+        if (RestMethod.GET == method) {
+            responses = handleGetRequest(controller, commandPath, headerDict);
         }
 
-        if (isPost(method)) {
-            handlePostMethod(dos, bufferedReader, headerDict, controller);
+        if (RestMethod.POST == method) {
+            responses = handlePostMethod(bufferedReader, headerDict, controller);
         }
+
+        dos.writeBytes(responses[RESPONSE_HEADER_IDX]);
+        dos.write(responses[RESPONSE_BODY_IDX].getBytes(ResponseMaker.CHARSET));
     }
 
-    private static void handlePostMethod(DataOutputStream dos, BufferedReader bufferedReader,
+    private static String[] handlePostMethod(BufferedReader bufferedReader,
         Map<String, String> headerDict, AbstractController controller) throws IOException {
         int contentLength = Integer.parseInt(headerDict.get("content-length"));
         String queryString = IOUtils.readData(bufferedReader, contentLength);
-        controller.doPost(dos, RequestParser.parseParameters(queryString));
+        return controller.doPost(RequestParser.parseParameters(queryString));
     }
 
-    private static void handleGetRequest(DataOutputStream dos, AbstractController controller,
+    private static String[] handleGetRequest(AbstractController controller,
         String commandLine, Map<String, String> headerDict) throws IOException, URISyntaxException {
-        controller.doGet(dos, commandLine, headerDict);
+        return controller.doGet(commandLine, headerDict);
     }
 
     private AbstractController getController(String commandLine) {
@@ -80,19 +86,11 @@ public class RequestHandler implements Runnable {
         return new ResourceController();
     }
 
-    private boolean isUserFunction(String commandLine) {
-        return commandLine.startsWith("/user") && isFunction(commandLine.split("/user")[1]);
+    private boolean isUserFunction(String commandPath) {
+        return commandPath.startsWith("/user") && isFunction(commandPath.split("/user")[1]);
     }
 
     private boolean isFunction(String queryLine) {
         return queryLine.startsWith("/create");
-    }
-
-    private boolean isGet(String method) {
-        return RestMethod.GET.hasSameValue(method);
-    }
-
-    private boolean isPost(String method) {
-        return RestMethod.POST.hasSameValue(method);
     }
 }

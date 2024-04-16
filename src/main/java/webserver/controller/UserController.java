@@ -2,6 +2,7 @@ package webserver.controller;
 
 import db.DataBase;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Map;
 import model.User;
 import utils.RequestParser;
@@ -10,26 +11,17 @@ import webserver.ResponseMaker;
 public class UserController implements AbstractController {
 
     @Override
-    public void doGet(DataOutputStream dos, String commandLine, Map<String, String> headerDict){
+    public String[] doGet(String commandLine, Map<String, String> headerDict) {
             String command = commandLine.split("/user")[1];
-            executeCommand(command);
-            ResponseMaker.response302Header(dos, "/index.html");
+             String responseHeader = executeCommand(command);
+            return new String[]{responseHeader, ""};
     }
 
     @Override
-    public void doPost(DataOutputStream dos, Map<String, String> body) {
+    public String[] doPost(Map<String, String> body) {
         createUser(body);
-        ResponseMaker.response302Header(dos, "/index.html");
-    }
-
-    @Override
-    public void doDelete() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void doPut() {
-        throw new UnsupportedOperationException();
+        String responseHeader = ResponseMaker.response302Header("/index.html");
+        return new String[]{responseHeader, ""};
     }
 
     private void createUser(Map<String, String> parameters) {
@@ -37,8 +29,9 @@ public class UserController implements AbstractController {
             parameters.get("name"), parameters.get("email")));
     }
 
-    private void executeCommand(String command) {
+    private String executeCommand(String command) {
         String[] tokens = command.split("\\?");
         createUser(RequestParser.parseParameters(tokens[1]));
+        return ResponseMaker.response302Header("/index.html");
     }
 }

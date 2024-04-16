@@ -6,6 +6,9 @@ public class TemplateViewResolver implements ViewResolver {
 
     @Override
     public String makeFilePath(String path) {
+        if (path.equals("/")) {
+            path = "/index.html";
+        }
         return TEMPLATE_FILE_PATH + path;
     }
 }
