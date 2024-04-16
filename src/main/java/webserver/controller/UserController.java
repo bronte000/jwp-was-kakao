@@ -4,14 +4,17 @@ import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.Template;
 import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
 import db.DataBase;
+import model.User;
+import utils.RequestParser;
+import webserver.Dataclass.Request;
+import webserver.Dataclass.Response;
+import webserver.Dataclass.Session;
+import webserver.ResponseMaker;
+import webserver.SessionManager;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
-
-import model.User;
-import utils.RequestParser;
-import webserver.*;
 
 public class UserController implements AbstractController {
 
@@ -36,7 +39,7 @@ public class UserController implements AbstractController {
     }
 
     private Response login(Request request) {
-        Session session = SessionManager.findSession(request.getSessionId());
+        Session session = SessionManager.findSession(request.getCookie().getAttribute("JSESSIONID"));
         if (session.isLogined()) {
             return new Response(ResponseMaker.response302Header("/index.html"));
         }
@@ -54,7 +57,7 @@ public class UserController implements AbstractController {
     }
 
     private Response list(Request request) {
-        Session session = SessionManager.findSession(request.getSessionId());
+        Session session = SessionManager.findSession(request.getCookie().getAttribute("JSESSIONID"));
         if (!session.isLogined()) {
             return new Response(ResponseMaker.response302Header("/user/login.html"));
         }
@@ -70,7 +73,7 @@ public class UserController implements AbstractController {
     }
 
     @Override
-    public Response doMethod(String method, Request request){
+    public Response doMethod(String method, Request request) {
         return methodDict.get(method).apply(request);
     }
 

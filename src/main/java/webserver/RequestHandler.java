@@ -8,15 +8,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Map;
-import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import utils.IOUtils;
 import utils.RequestParser;
+import webserver.Dataclass.Request;
+import webserver.Dataclass.Response;
 import webserver.controller.AbstractController;
-import webserver.controller.ResourceController;
-import webserver.controller.UserController;
 
 public class RequestHandler implements Runnable {
 

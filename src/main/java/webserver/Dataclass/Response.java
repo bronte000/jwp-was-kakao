@@ -1,11 +1,6 @@
-package webserver;
-
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+package webserver.Dataclass;
 
 public class Response {
-
-    public static final Charset CHARSET = StandardCharsets.ISO_8859_1;
 
     private final String responseHeader;
     private final byte[] responseBody;

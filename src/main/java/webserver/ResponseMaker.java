@@ -1,5 +1,7 @@
 package webserver;
 
+import webserver.Dataclass.HttpCookie;
+
 public class ResponseMaker {
 
     public static String response200Header(int lengthOfBodyContent, String contentType, boolean isSetCookie) {
@@ -15,7 +17,7 @@ public class ResponseMaker {
         if (!isSetCookie) {
             return "";
         }
-        return "Set-Cookie: " + "JSESSIONID=" + HttpCookie.createCookie() + "\r\n";
+        return "Set-Cookie: " + new HttpCookie().parseToString() + "\r\n";
     }
 
     public static String response302Header(String redirectPath) {
