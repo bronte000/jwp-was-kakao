@@ -4,34 +4,42 @@ import db.DataBase;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.Function;
+
 import model.User;
 import utils.RequestParser;
+import webserver.Request;
+import webserver.Response;
 import webserver.ResponseMaker;
 
 public class UserController implements AbstractController {
 
-    @Override
-    public String[] doGet(String commandLine, Map<String, String> headerDict) {
-            String command = commandLine.split("/user")[1];
-             String responseHeader = executeCommand(command);
-            return new String[]{responseHeader, ""};
-    }
+    private final Map<String, Function<Request, Response>> methodDict = Map.of(
+            "GET", this::doGet,
+            "POST", this::doPost
+    );
 
     @Override
-    public String[] doPost(Map<String, String> body) {
-        createUser(body);
-        String responseHeader = ResponseMaker.response302Header("/index.html");
-        return new String[]{responseHeader, ""};
+    public Response doMethod(String method, Request request){
+        return methodDict.get(method).apply(request);
     }
 
-    private void createUser(Map<String, String> parameters) {
+    public Response doGet(Request request) {
+            String command = request.getCommandPath().split("/user")[1];
+            String[] tokens = command.split("\\?");
+            return createUser(tokens[1]);
+    }
+
+    public Response doPost(Request request) {
+        return createUser(request.getCommandPath());
+    }
+
+    private Response createUser(String queryLine) {
+        Map<String, String> parameters = RequestParser.parseParameters(queryLine);
         DataBase.addUser(new User(parameters.get("userId"), parameters.get("password"),
-            parameters.get("name"), parameters.get("email")));
-    }
+                parameters.get("name"), parameters.get("email")));
 
-    private String executeCommand(String command) {
-        String[] tokens = command.split("\\?");
-        createUser(RequestParser.parseParameters(tokens[1]));
-        return ResponseMaker.response302Header("/index.html");
+        String responseHeader = ResponseMaker.response302Header("/index.html");
+        return new Response(responseHeader, "");
     }
 }

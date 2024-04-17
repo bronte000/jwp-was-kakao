@@ -20,8 +20,8 @@ public class RequestParser {
         Map<String, String> headerDict = new HashMap<>();
         String line = bufferedReader.readLine();
         while (isNotEmpty(line)) {
-            String [] tokens = line.split(": ");
-            headerDict.put(tokens[HEADER_TYPE].toLowerCase(), tokens[HEADER_VALUES]);
+            String [] tokens = line.split(":");
+            headerDict.put(tokens[HEADER_TYPE].toLowerCase().trim(), tokens[HEADER_VALUES].trim());
             line = bufferedReader.readLine();
         }
         return headerDict;
