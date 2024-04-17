@@ -7,8 +7,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.Objects;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.IOUtils;
@@ -45,54 +46,19 @@ public class RequestHandler implements Runnable {
     private void handleRequest(DataOutputStream dos, BufferedReader bufferedReader)
         throws IOException{
 
-        String commandLine = bufferedReader.readLine();
-        RestMethod method = RestMethod.valueOf(RequestParser.parseMethod(commandLine).toUpperCase());
-        String commandPath = RequestParser.parseCommandPath(commandLine);
+        String requestLine = bufferedReader.readLine();
+        System.out.println(requestLine);
+
+        String commandLine = RequestParser.parseCommandLine(requestLine);
         Map<String, String> headerDict = RequestParser.parseHeader(bufferedReader);
+        String body = RequestParser.parseBody(bufferedReader, headerDict);
+        AbstractController controller = RequestParser.parseController(commandLine);
 
-        AbstractController controller = getController(commandPath);
-
-        Response response = null;
-        if (RestMethod.GET == method) {
-            response = handleGetRequest(controller, commandPath, headerDict);
-        }
-
-        if (RestMethod.POST == method) {
-            response = handlePostMethod(bufferedReader, headerDict, controller);
-        }
+        Request request = new Request(commandLine, headerDict, body);
+        String command = controller.parseCommand(commandLine);
+        Response response = controller.doMethod(command, request);
 
         dos.writeBytes(response.getResponseHeader());
         dos.write(response.getResponseBody());
-    }
-
-    private static Response handlePostMethod(BufferedReader bufferedReader,
-        Map<String, String> headerDict, AbstractController controller) throws IOException {
-        int contentLength = Integer.parseInt(headerDict.get("content-length"));
-        String queryString = IOUtils.readData(bufferedReader, contentLength);
-
-        Request request = new Request(queryString, headerDict);
-        return controller.doMethod("POST", request);
-    }
-
-    private static Response handleGetRequest(AbstractController controller,
-        String commandLine, Map<String, String> headerDict) {
-
-        Request request = new Request(commandLine, headerDict);
-        return controller.doMethod("GET", request);
-    }
-
-    private AbstractController getController(String commandLine) {
-        if (isUserFunction(commandLine)) {
-            return new UserController();
-        }
-        return new ResourceController();
-    }
-
-    private boolean isUserFunction(String commandPath) {
-        return commandPath.startsWith("/user") && isFunction(commandPath.split("/user")[1]);
-    }
-
-    private boolean isFunction(String queryLine) {
-        return queryLine.startsWith("/create");
     }
 }

@@ -1,17 +1,21 @@
 package webserver;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.nio.charset.StandardCharsets;
-
 public class ResponseMaker {
 
-    public static String response200Header(int lengthOfBodyContent, String contentType) {
+    public static String response200Header(int lengthOfBodyContent, String contentType, boolean isSetCookie) {
+        String cookieLine = makeCookieLine(isSetCookie);
         return "HTTP/1.1 200 OK \r\n"
                 + "Content-Type:" + contentType + "\r\n"
                 + "Content-Length: " + lengthOfBodyContent + "\r\n"
+                + cookieLine
                 + "\r\n";
+    }
+
+    private static String makeCookieLine(boolean isSetCookie) {
+        if (!isSetCookie) {
+            return "";
+        }
+        return "Set-Cookie: " + "JSESSIONID=" + HttpCookie.createCookie() + "\r\n";
     }
 
     public static String response302Header(String redirectPath) {

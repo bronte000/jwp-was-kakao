@@ -5,28 +5,33 @@ import java.util.Map;
 public class Request {
 
     private final String commandPath;
+    private final boolean setCookie;
     private final Map<String, String> headerDict;
-    private final Map<String, String> bodyDict;
+    private final String body;
 
-    public Request(String commandPath, Map<String, String> headerDict, Map<String, String> bodyDict) {
+    public Request(String commandPath, Map<String, String> headerDict, String body) {
         this.commandPath = commandPath;
+        this.setCookie = !headerDict.containsKey("cookie");
         this.headerDict = headerDict;
-        this.bodyDict = bodyDict;
-    }
-
-    public Request(String commandPath, Map<String, String> headerDict) {
-        this(commandPath, headerDict, null);
+        this.body = body;
     }
 
     public String getCommandPath() {
         return commandPath;
     }
 
-    public Map<String, String> getHeaderDict() {
-        return headerDict;
+    public boolean isSetCookie() {
+        return setCookie;
     }
 
-    public Map<String, String> getBodyDict() {
-        return bodyDict;
+    public String getQuery() {
+        if (commandPath.contains("\\?")) {
+            return commandPath.split("\\?")[1];
+        }
+        return body;
+    }
+
+    public String getCookie() {
+        return headerDict.get("cookie");
     }
 }

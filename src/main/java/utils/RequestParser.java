@@ -1,5 +1,9 @@
 package utils;
 
+import webserver.controller.AbstractController;
+import webserver.controller.ResourceController;
+import webserver.controller.UserController;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -32,6 +36,14 @@ public class RequestParser {
         return !"".equals(line) && line != null;
     }
 
+    public static String parseBody(BufferedReader bufferedReader, Map<String, String> headerDict) throws IOException {
+        if (headerDict.containsKey("content-length")) {
+            int contentLength = Integer.parseInt(headerDict.get("content-length"));
+            return IOUtils.readData(bufferedReader, contentLength);
+        }
+        return "";
+    }
+
     public static Map<String, String> parseParameters(String parameterString) {
         return Arrays.stream(parameterString.split("&"))
             .map(url -> URLDecoder.decode(url, StandardCharsets.UTF_8))
@@ -39,11 +51,17 @@ public class RequestParser {
             .collect(Collectors.toMap(token -> token[0], token -> token[1]));
     }
 
-    public static String parseMethod(String commandLine) {
-        return commandLine.split(" ")[COMMANDLINE_METHOD];
+    public static String parseCommandLine(String commandLine) {
+        return commandLine.split(" ")[COMMANDLINE_PATH];
     }
 
-    public static String parseCommandPath(String commandLine) {
-        return commandLine.split(" ")[COMMANDLINE_PATH];
+    public static AbstractController parseController(String commandLine) {
+        if (commandLine.endsWith("/") || commandLine.endsWith(".html")) {
+            return new ResourceController();
+        }
+        if (commandLine.startsWith("/user")) {
+            return new UserController();
+        }
+        return new ResourceController();
     }
 }

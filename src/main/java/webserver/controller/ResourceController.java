@@ -19,7 +19,7 @@ import webserver.view.ViewResolver;
 public class ResourceController implements AbstractController {
 
     private final Map<String, Function<Request, Response>> methodDict = Map.of(
-        "GET", this::doGet
+        "", this::doGet
     );
 
     public Response doMethod(String method, Request request) {
@@ -38,7 +38,7 @@ public class ResourceController implements AbstractController {
             byte [] body = FileIoUtils.loadFileFromClasspath(filePath);
             String contentType = Files.probeContentType(Path.of(filePath));
 
-            String responseHeader = ResponseMaker.response200Header(body.length, contentType);
+            String responseHeader = ResponseMaker.response200Header(body.length, contentType, request.isSetCookie());
             String responseBody = ResponseMaker.responseBody(body);
             return new Response(responseHeader, responseBody);
         } catch (IOException | URISyntaxException e) {
@@ -48,5 +48,10 @@ public class ResourceController implements AbstractController {
 
     private boolean isTemplatePath(String path) {
         return path.equals("/") || path.endsWith(".html") || path.endsWith(".ico");
+    }
+
+    @Override
+    public String parseCommand(String commandPath) {
+        return "";
     }
 }

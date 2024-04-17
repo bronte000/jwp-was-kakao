@@ -12,4 +12,6 @@ import java.util.function.Function;
 public interface AbstractController {
 
     Response doMethod(String method, Request request);
+
+    String parseCommand(String commandPath);
 }
