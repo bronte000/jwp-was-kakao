@@ -32,6 +32,10 @@ public class Request {
     }
 
     public String getCookie() {
-        return headerDict.get("cookie");
+        return headerDict.get("cookie").replace("JSESSIONID=", "");
+    }
+
+    public String getSessionId() {
+        return getCookie();
     }
 }

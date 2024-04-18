@@ -11,14 +11,21 @@ public class HttpCookie {
     public static String createCookie() {
         String cookie = UUID.randomUUID().toString();
         cookies.put(cookie, "");
+        Session session = new Session(cookie);
+        SessionManager.add(session);
         return cookie;
     }
 
     public static void updateCookie(String cookie, String content) {
-        cookies.replace(cookie, content);
+        cookies.put(cookie, content);
     }
 
     public static boolean isLogined(String cookie) {
-        return cookies.get(cookie).equals("logined=true");
+        if (!cookies.containsKey(cookie)) {
+            cookies.put(cookie, "");
+            return false;
+        }
+        return cookies.get(cookie)
+                .equals("logined=true");
     }
 }

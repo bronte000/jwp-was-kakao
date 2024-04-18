@@ -5,14 +5,18 @@ import java.nio.charset.StandardCharsets;
 
 public class Response {
 
-    public static final Charset charset = StandardCharsets.ISO_8859_1;
+    public static final Charset CHARSET = StandardCharsets.ISO_8859_1;
 
     private final String responseHeader;
-    private final String responseBody;
+    private final byte[] responseBody;
 
-    public Response(String responseHeader, String responseBody) {
+    public Response(String responseHeader, byte[] responseBody) {
         this.responseHeader = responseHeader;
         this.responseBody = responseBody;
+    }
+
+    public Response(String responseHeader) {
+        this(responseHeader, new byte[0]);
     }
 
     public String getResponseHeader() {
@@ -20,6 +24,6 @@ public class Response {
     }
 
     public byte[] getResponseBody() {
-        return responseBody.getBytes(charset);
+        return responseBody;
     }
 }

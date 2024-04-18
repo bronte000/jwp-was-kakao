@@ -30,9 +30,4 @@ public class ResponseMaker {
                 + "\r\n"
                 + "<html><body><h1>404 Not Found</h1></body></html>";
     }
-
-    public static String responseBody(byte[] body) {
-        return new String(body, Response.charset);
-    }
-
 }

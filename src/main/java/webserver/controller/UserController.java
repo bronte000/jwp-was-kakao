@@ -1,19 +1,23 @@
 package webserver.controller;
 
+import com.github.jknack.handlebars.Handlebars;
+import com.github.jknack.handlebars.Template;
+import com.github.jknack.handlebars.io.ClassPathTemplateLoader;
 import db.DataBase;
-import java.io.DataOutputStream;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
 
 import model.User;
 import utils.RequestParser;
-import webserver.HttpCookie;
-import webserver.Request;
-import webserver.Response;
-import webserver.ResponseMaker;
+import webserver.*;
 
 public class UserController implements AbstractController {
+
+    private static final Handlebars handlebar = new Handlebars(
+            new ClassPathTemplateLoader("/templates", ".html")
+    );
 
     private final Map<String, Function<Request, Response>> methodDict = Map.of(
             "create", this::createUser,
@@ -28,12 +32,13 @@ public class UserController implements AbstractController {
                 parameters.get("name"), parameters.get("email")));
 
         String responseHeader = ResponseMaker.response302Header("/index.html");
-        return new Response(responseHeader, "");
+        return new Response(responseHeader);
     }
 
     private Response login(Request request) {
-        if (isLogined(request.getCookie())) {
-            return new Response(ResponseMaker.response302Header("/index.html"), "");
+        Session session = SessionManager.findSession(request.getSessionId());
+        if (session.isLogined()) {
+            return new Response(ResponseMaker.response302Header("/index.html"));
         }
 
         String query = request.getQuery();
@@ -41,28 +46,27 @@ public class UserController implements AbstractController {
 
         User user = DataBase.findUserById(parameters.get("userId"));
         if (user != null && user.getPassword().equals(parameters.get("password"))) {
-            HttpCookie.updateCookie(request.getCookie(), "logined=true");
+            session.setAttribute("user", user);
             String responseHeader = ResponseMaker.response302Header("/index.html");
-            return new Response(responseHeader, "");
+            return new Response(responseHeader);
         }
-        return new Response(ResponseMaker.response302Header("/user/login_failed.html"), "");
+        return new Response(ResponseMaker.response302Header("/user/login_failed.html"));
     }
 
     private Response list(Request request) {
-        if (!isLogined(request.getCookie())) {
-            return new Response(ResponseMaker.response302Header("/user/login.html"), "");
+        Session session = SessionManager.findSession(request.getSessionId());
+        if (!session.isLogined()) {
+            return new Response(ResponseMaker.response302Header("/user/login.html"));
         }
 
-        String users = DataBase.findAll().stream()
-                .map(User::toString)
-                .reduce("", (acc, cur) -> acc + cur + "\n");
-
-        String responseHeader = ResponseMaker.response200Header(users.length(), "text/html", request.isSetCookie());
-        return new Response(responseHeader, users);
-    }
-
-    private boolean isLogined(String cookie) {
-        return HttpCookie.isLogined(cookie);
+        try {
+            Template template = handlebar.compile("user/list");
+            String listPage = template.apply(DataBase.findAll());
+            String responseHeader = ResponseMaker.response200Header(listPage.length(), "text/html", request.isSetCookie());
+            return new Response(responseHeader, listPage.getBytes());
+        } catch (IOException e) {
+            return new Response(ResponseMaker.response404Header());
+        }
     }
 
     @Override
