@@ -64,7 +64,7 @@ public class UserController implements AbstractController {
 
         try {
             Template template = handlebar.compile("user/list");
-            String listPage = template.apply(DataBase.findAll());
+            String listPage = template.apply(Map.of("users", DataBase.findAll()));
             String responseHeader = ResponseMaker.response200Header(listPage.length(), "text/html", request.isSetCookie());
             return new Response(responseHeader, listPage.getBytes());
         } catch (IOException e) {
